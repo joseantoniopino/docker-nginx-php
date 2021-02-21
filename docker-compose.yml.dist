@@ -1,0 +1,56 @@
+version: '3.5'
+
+services:
+  docker-web:
+    container_name: docker-web
+    build:
+      context: ./docker/nginx
+      args:
+        UID: $U_ID
+    ports:
+      - 300:80
+    volumes:
+      - ./public:/appdata/www/public
+    networks:
+      - docker-network
+    depends_on:
+      - docker-be
+
+  docker-be:
+    container_name: docker-be
+    build:
+      context: ./docker/php
+      args:
+        UID: $U_ID
+    volumes:
+      - ./:/appdata/www
+      - ~/.ssh/id_rsa:/home/appuser/.ssh/id_rsa
+    env_file:
+      - .env
+    networks:
+      - docker-network
+    depends_on:
+      - docker-db
+
+  docker-db:
+    container_name: docker-db
+    image: mysql:8.0
+    ports:
+      - 40000:3306
+    environment:
+      MYSQL_DATABASE: docker_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    command: mysqld --sql_mode="STRICT_ALL_TABLES,NO_ENGINE_SUBSTITUTION"
+    volumes:
+      - docker-database-data:/var/lib/mysql
+    networks:
+      - docker-network
+
+volumes:
+  docker-database-data:
+
+networks:
+  docker-network:
+    external: true
